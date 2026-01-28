@@ -14,19 +14,26 @@ When team members complete outreach activities, they post initial outreach notif
 
 ## Workflow
 
-### 1. Identify Outreach Threads
+### 1. Identify Initial Outreach Notifications
 
-Search the Proact channel for messages that indicate initial outreach:
-- Messages containing company names with target counts
-- Messages with timestamps from the specified time range
-- Thread starter messages (not replies)
+Search the Proact channel for Sequence send notifications matching pattern:
+```
+X · Initial Outreach (M/DD)
+email@domain.com
+[Screenshot: "All set!" confirmation]
+```
+
+Where:
+- `X` = Sequence letter (A, B, C, ... G, H, etc.)
+- `M/DD` = Month/Day of outreach
+- Email address identifies the target company/contact
 
 ### 2. Check for Followup Screenshots
 
-For each identified outreach thread:
+For each identified outreach notification:
 - Retrieve all replies in the thread
 - Check if any reply contains an image attachment (files with `mimetype` starting with `image/`)
-- Image presence indicates followup completion (metric update confirmed)
+- Image in reply indicates followup completion (funnel metric update confirmed)
 
 ### 3. Generate Report
 

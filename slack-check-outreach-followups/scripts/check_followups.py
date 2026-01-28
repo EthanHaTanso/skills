@@ -4,11 +4,17 @@ Slack Outreach Followup Checker
 
 Checks if outreach threads have received followup screenshots
 indicating funnel metric updates have been completed.
+
+Identifies outreach notifications by pattern:
+- "X · Initial Outreach (M/DD)" - Sequence send notification
+- Contains email address
+- May have screenshot attachment showing "All set!" confirmation
 """
 
 import os
 import sys
 import argparse
+import re
 from datetime import datetime, timedelta
 from typing import Optional
 import json
@@ -24,6 +30,13 @@ except ImportError:
 # Proact channel ID
 DEFAULT_CHANNEL_ID = "C09N1G89QDC"
 
+# Pattern to identify Initial Outreach notifications
+# Examples: "G · Initial Outreach (1/28)", "H · Initial Outreach (1/27)"
+OUTREACH_PATTERN = re.compile(
+    r"^([A-Z])\s*[·•]\s*Initial Outreach\s*\((\d{1,2}/\d{1,2})\)",
+    re.MULTILINE
+)
+
 
 def get_slack_client() -> WebClient:
     """Initialize Slack client with bot token."""
@@ -33,7 +46,47 @@ def get_slack_client() -> WebClient:
     return WebClient(token=token)
 
 
-def get_messages_in_timerange(
+def is_outreach_notification(message: dict) -> Optional[dict]:
+    """
+    Check if a message is an Initial Outreach notification.
+
+    Args:
+        message: Slack message object
+
+    Returns:
+        Dict with parsed info if it's an outreach notification, None otherwise
+    """
+    text = message.get("text", "")
+
+    # Match the outreach pattern: "X · Initial Outreach (M/DD)"
+    match = OUTREACH_PATTERN.search(text)
+    if not match:
+        return None
+
+    sequence_letter = match.group(1)
+    date_str = match.group(2)
+
+    # Extract email address if present
+    email_match = re.search(r"[\w\.-]+@[\w\.-]+\.\w+", text)
+    email = email_match.group(0) if email_match else None
+
+    # Extract company/domain from email
+    company = None
+    if email:
+        domain = email.split("@")[1] if "@" in email else None
+        if domain:
+            # Remove common TLDs and clean up
+            company = domain.split(".")[0].replace("-", " ").title()
+
+    return {
+        "sequence_letter": sequence_letter,
+        "outreach_date_str": date_str,
+        "email": email,
+        "company": company,
+    }
+
+
+def get_outreach_messages(
     client: WebClient,
     channel_id: str,
     days: int = 7,
@@ -41,7 +94,7 @@ def get_messages_in_timerange(
     end_date: Optional[str] = None,
 ) -> list:
     """
-    Fetch messages from a channel within a time range.
+    Fetch Initial Outreach notification messages from a channel.
 
     Args:
         client: Slack WebClient
@@ -51,7 +104,7 @@ def get_messages_in_timerange(
         end_date: Optional end date (YYYY-MM-DD)
 
     Returns:
-        List of messages with thread_ts (thread parent messages)
+        List of outreach notification messages with parsed info
     """
     if start_date and end_date:
         oldest = datetime.strptime(start_date, "%Y-%m-%d").timestamp()
@@ -73,9 +126,11 @@ def get_messages_in_timerange(
                 cursor=cursor,
             )
 
-            # Filter for messages that have replies (threads)
+            # Filter for Initial Outreach notifications
             for msg in result.get("messages", []):
-                if msg.get("reply_count", 0) > 0:
+                outreach_info = is_outreach_notification(msg)
+                if outreach_info:
+                    msg["_outreach_info"] = outreach_info
                     messages.append(msg)
 
             cursor = result.get("response_metadata", {}).get("next_cursor")
@@ -147,37 +202,44 @@ def has_image_attachment(message: dict) -> tuple[bool, Optional[str]]:
     return False, None
 
 
-def extract_company_name(message: dict) -> str:
+def extract_company_info(message: dict) -> dict:
     """
-    Extract company name from outreach message text.
+    Extract company/target info from outreach message.
 
     Args:
-        message: Slack message object
+        message: Slack message object with _outreach_info
 
     Returns:
-        Company name or "Unknown"
+        Dict with company name and other extracted info
     """
+    outreach_info = message.get("_outreach_info", {})
     text = message.get("text", "")
 
-    # Common patterns for outreach messages
-    # Look for company names followed by target counts
-    import re
+    # Use parsed info from outreach pattern
+    company = outreach_info.get("company")
+    email = outreach_info.get("email")
+    sequence = outreach_info.get("sequence_letter", "?")
+    date_str = outreach_info.get("outreach_date_str", "")
 
-    # Pattern: "Company Name | XX명" or "Company Name (XX명)"
-    patterns = [
-        r"[|｜]\s*([^|]+?)\s*[|｜]\s*[\d,]+\s*명",
-        r"([A-Za-z][A-Za-z0-9\s&\-\.]+(?:LLC|Inc|Corp|Ltd|Company)?)\s*[|｜:]\s*[\d,]+",
-        r"\*([^*]+)\*",  # Bold text often contains company names
-    ]
+    # If company not extracted from email, try other patterns
+    if not company:
+        # Look for domain in text
+        domain_match = re.search(r"@([\w\.-]+\.\w+)", text)
+        if domain_match:
+            domain = domain_match.group(1)
+            company = domain.split(".")[0].replace("-", " ").title()
 
-    for pattern in patterns:
-        match = re.search(pattern, text)
-        if match:
-            return match.group(1).strip()
+    # Fallback to first line
+    if not company:
+        first_line = text.split("\n")[0][:40]
+        company = first_line if first_line else "Unknown"
 
-    # Fallback: first line truncated
-    first_line = text.split("\n")[0][:50]
-    return first_line if first_line else "Unknown"
+    return {
+        "company": company,
+        "email": email,
+        "sequence": sequence,
+        "date_str": date_str,
+    }
 
 
 def get_user_name(client: WebClient, user_id: str) -> str:
@@ -206,6 +268,9 @@ def check_outreach_followups(
     """
     Main function to check outreach followup status.
 
+    Identifies Initial Outreach notifications and checks if followup
+    screenshots (funnel metric updates) have been posted in the thread.
+
     Args:
         channel_id: Slack channel ID
         days: Number of days to look back
@@ -218,12 +283,12 @@ def check_outreach_followups(
     """
     client = get_slack_client()
 
-    print(f"Fetching messages from channel {channel_id}...")
-    messages = get_messages_in_timerange(
+    print(f"Fetching Initial Outreach notifications from channel {channel_id}...")
+    messages = get_outreach_messages(
         client, channel_id, days, start_date, end_date
     )
 
-    print(f"Found {len(messages)} threads. Checking for followup screenshots...")
+    print(f"Found {len(messages)} outreach notifications. Checking for followup screenshots...")
 
     results = {
         "completed": [],
@@ -236,37 +301,42 @@ def check_outreach_followups(
     }
 
     for msg in messages:
-        thread_ts = msg.get("thread_ts") or msg.get("ts")
-        company = extract_company_name(msg)
+        thread_ts = msg.get("ts")  # Use message ts as thread identifier
+        company_info = extract_company_info(msg)
         outreach_date = format_timestamp(msg["ts"])
+        poster_id = msg.get("user")
+        poster_name = get_user_name(client, poster_id) if poster_id else "Unknown"
 
-        # Get thread replies
+        # Get thread replies (if any)
         replies = get_thread_replies(client, channel_id, thread_ts)
 
-        # Check for image attachments in replies
-        has_screenshot = False
+        # Check for image attachments in replies (followup screenshots)
+        has_followup_screenshot = False
         screenshot_by = None
         screenshot_date = None
 
         for reply in replies:
             found, user_id = has_image_attachment(reply)
             if found:
-                has_screenshot = True
+                has_followup_screenshot = True
                 screenshot_by = get_user_name(client, user_id) if user_id else "Unknown"
                 screenshot_date = format_timestamp(reply["ts"])
                 break
 
         entry = {
-            "company": company,
+            "company": company_info["company"],
+            "email": company_info.get("email"),
+            "sequence": company_info.get("sequence", "?"),
             "outreach_date": outreach_date,
+            "posted_by": poster_name,
             "thread_ts": thread_ts,
             "thread_url": f"https://slack.com/archives/{channel_id}/p{thread_ts.replace('.', '')}",
         }
 
-        if has_screenshot:
+        if has_followup_screenshot:
             entry["status"] = "Completed"
-            entry["screenshot_by"] = screenshot_by
-            entry["screenshot_date"] = screenshot_date
+            entry["followup_by"] = screenshot_by
+            entry["followup_date"] = screenshot_date
             results["completed"].append(entry)
         else:
             # Calculate days since outreach
@@ -290,32 +360,42 @@ def print_results(results: dict, output_format: str = "table"):
         return
 
     # Table format
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 90)
     print("OUTREACH FOLLOWUP STATUS REPORT")
-    print("=" * 80)
+    print("=" * 90)
 
     print(f"\nSummary: {results['summary']['completed']}/{results['summary']['total']} completed")
     print(f"         {results['summary']['pending']} pending followups\n")
 
     if results["completed"]:
-        print("-" * 80)
-        print("COMPLETED (Screenshot uploaded)")
-        print("-" * 80)
-        print(f"{'Company':<35} {'Outreach Date':<18} {'Screenshot By':<20}")
-        print("-" * 80)
+        print("-" * 90)
+        print("COMPLETED (Followup screenshot uploaded)")
+        print("-" * 90)
+        print(f"{'Seq':<4} {'Company':<25} {'Outreach':<18} {'Posted By':<12} {'Followup By':<15}")
+        print("-" * 90)
         for entry in results["completed"]:
-            print(f"{entry['company'][:34]:<35} {entry['outreach_date']:<18} {entry.get('screenshot_by', '-'):<20}")
+            seq = entry.get("sequence", "?")
+            company = entry["company"][:24] if entry["company"] else "Unknown"
+            outreach = entry["outreach_date"]
+            posted = entry.get("posted_by", "-")[:11]
+            followup = entry.get("followup_by", "-")[:14]
+            print(f"{seq:<4} {company:<25} {outreach:<18} {posted:<12} {followup:<15}")
 
     if results["pending"]:
-        print("\n" + "-" * 80)
-        print("PENDING (No screenshot yet)")
-        print("-" * 80)
-        print(f"{'Company':<35} {'Outreach Date':<18} {'Status':<20}")
-        print("-" * 80)
+        print("\n" + "-" * 90)
+        print("PENDING (No followup screenshot yet)")
+        print("-" * 90)
+        print(f"{'Seq':<4} {'Company':<25} {'Outreach':<18} {'Posted By':<12} {'Status':<20}")
+        print("-" * 90)
         for entry in results["pending"]:
-            print(f"{entry['company'][:34]:<35} {entry['outreach_date']:<18} {entry['status']:<20}")
+            seq = entry.get("sequence", "?")
+            company = entry["company"][:24] if entry["company"] else "Unknown"
+            outreach = entry["outreach_date"]
+            posted = entry.get("posted_by", "-")[:11]
+            status = entry["status"]
+            print(f"{seq:<4} {company:<25} {outreach:<18} {posted:<12} {status:<20}")
 
-    print("\n" + "=" * 80)
+    print("\n" + "=" * 90)
 
 
 def main():
