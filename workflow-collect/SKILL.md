@@ -49,6 +49,7 @@ When you use this skill, select the phase you're currently working on:
 - Evaluate Go/No-Go decision
 
 **3. MVP 제안 (MVP Proposal)**
+- Strategic validation (clarify:unknown + Rumsfeld Matrix)
 - Create MVP Ideation document
 - Write MVP Proposal for user
 
@@ -92,7 +93,7 @@ When you use this skill, select the phase you're currently working on:
 **Optional Info**:
 - Years of experience, Prior hints, Current tools
 
-**File**: `./User Discover/User List/users.csv`
+**File**: `./User Discover/User List/users.json`
 
 **Reference**: [references/phase1-interview-prep.md](references/phase1-interview-prep.md)
 
@@ -171,6 +172,37 @@ When you use this skill, select the phase you're currently working on:
 ---
 
 ## Phase 3: MVP Proposal
+
+### 3-0. Strategic Validation
+
+**Purpose**: Validate strategic direction and feasibility before investing in detailed ideation
+
+**When**: After JTBD GO decision, before MVP Ideation
+
+**Process**:
+1. **Invoke `Skill(skill: "clarify:unknown")`** with JTBD document as input
+2. Categorize existing knowledge into Rumsfeld Matrix (Known Known / Known Unknown / Unknown Known / Unknown Unknown)
+3. Present matrix to user for review
+4. Conduct deep interview (3-5 rounds) guided by the matrix:
+   - Round 1: Known Unknowns — fill explicit gaps
+   - Round 2: Unknown Knowns — surface implicit assumptions
+   - Round 3: Unknown Unknowns — explore blind spots (failure modes, competition, timing)
+5. Evaluate strategic fit:
+   - AI Redesign potential (workflow transformation, not just automation)
+   - Big Fan feasibility ("can't go back" mechanism)
+   - 1-week MVP feasibility (can core value be delivered?)
+   - Scalability signal (multiple users with same problem?)
+6. Present GO/PIVOT recommendation with reasoning
+
+**Output**: Strategic validation summary (appended to JTBD or saved separately)
+- Rumsfeld Matrix (resolved)
+- Strategic fit assessment
+- GO/PIVOT recommendation
+- Key constraints and risks for Ideation to address
+
+**Guide**: [references/strategy-guide.md](references/strategy-guide.md)
+
+---
 
 ### 3-1. Create MVP Ideation
 
@@ -274,7 +306,7 @@ When you use this skill, select the phase you're currently working on:
 - Problem deduplication (multiple users with same workflow)
 
 **Files**:
-- `./User Discover/User List/users.csv` - All users and status
+- `./User Discover/User List/users.json` - All users and status
 - `./P-S Tree/mvp-solutions.json` - Problems, solutions, and analytics
 
 **Detailed Guide**: [references/phase4-tracking.md](references/phase4-tracking.md)
@@ -287,7 +319,7 @@ When you use this skill, select the phase you're currently working on:
 ./
 ├── User Discover/
 │   ├── User List/
-│   │   └── users.csv                    # User tracking
+│   │   └── users.json                    # User tracking
 │   └── User Interview/
 │       ├── USER_001_2026-02-04.md        # JTBD docs
 │       ├── USER_001_2026-02-04_ideation.md  # MVP Ideation (internal)
@@ -316,6 +348,7 @@ When you use this skill, select the phase you're currently working on:
 - [go-no-go-criteria.md](references/go-no-go-criteria.md) - Decision criteria
 
 **Phase 3: MVP Proposal**
+- [strategy-guide.md](references/strategy-guide.md) - Strategic validation guide (clarify:unknown + Rumsfeld Matrix)
 - [phase3-mvp-proposal.md](references/phase3-mvp-proposal.md) - Complete Phase 3 guide
 - [mvp-ideation-template.md](references/mvp-ideation-template.md) - Ideation template
 - [mvp-proposal-template.md](references/mvp-proposal-template.md) - Proposal template

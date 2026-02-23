@@ -222,7 +222,7 @@ Looking forward to learning from your experience!
 ./
 ├── User Discover/                          # User management
 │   ├── User List/
-│   │   └── users.csv                      # User registry
+│   │   └── users.json                      # User registry
 │   └── User Interview/
 │       ├── USER_001_2024-02-04.md          # JTBD
 │       ├── USER_001_2024-02-04_ideation.md # Ideation
@@ -248,7 +248,7 @@ Looking forward to learning from your experience!
 
 ### 2-2. User List Management
 
-**File**: `./User Discover/User List/users.csv`
+**File**: `./User Discover/User List/users.json`
 
 **Purpose**: Single source of truth for all users
 
@@ -1087,4 +1087,4 @@ If any unchecked: NOT READY for Public expansion yet.
 
 - [references/followup-guide.md](references/followup-guide.md) - Demo & follow-up process
 - P-S Tree structure - Organize problems and solutions
-- User List (users.csv) - Track individual user journeys
+- User List (users.json) - Track individual user journeys

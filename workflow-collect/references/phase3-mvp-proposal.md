@@ -1,15 +1,32 @@
-# Phase 3: MVP Ideation & MVP Proposal Creation
+# Phase 3: Strategic Validation, MVP Ideation & MVP Proposal Creation
 
 ## Overview
 
-This phase transforms a GO-approved JTBD into a concrete MVP proposal that the user can present to the interviewee. It consists of two sub-phases:
+This phase transforms a GO-approved JTBD into a concrete MVP proposal. It consists of three sub-phases:
 
+0. **Strategic Validation**: Stress-test the idea's direction and feasibility using Rumsfeld Matrix (clarify:unknown) before investing in detailed ideation
 1. **MVP Ideation** (Internal document): Rapidly sketch core problem, solution, and features while validating technical feasibility
 2. **MVP Proposal** (User-facing document): Present MVP impact, usage scenarios, and feedback requests in user-friendly language
 
-**Duration**: 30-45 minutes ideation + 30-45 minutes proposal writing
-**Output**: MVP Ideation document + MVP Proposal document
+**Duration**: 20-30 minutes strategy + 30-45 minutes ideation + 30-45 minutes proposal writing
+**Output**: Strategic validation summary + MVP Ideation document + MVP Proposal document
 **Next Phase**: Phase 4 (MVP Development & Demo)
+
+---
+
+## Part 0: Strategic Validation
+
+See [references/strategy-guide.md](references/strategy-guide.md) for the full guide.
+
+**Quick Summary**:
+1. Invoke `Skill(skill: "clarify:unknown")` with JTBD as input
+2. Review Rumsfeld Matrix with user
+3. Deep interview (3-5 rounds) to resolve unknowns
+4. Strategic fit assessment (AI Redesign, Big Fan, 1-week MVP, Scalability, Strategic Fit)
+5. GO/PIVOT recommendation
+
+If GO → proceed to Part 1 (MVP Ideation) with strategic context.
+If PIVOT → document reasoning, update JTBD status.
 
 ---
 

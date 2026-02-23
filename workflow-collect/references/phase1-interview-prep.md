@@ -80,97 +80,43 @@ Track interviewee information before conducting the interview.
 
 ### User List Management
 
-**File Location**: `./User Discover/User List/users.csv`
+**File Location**: `./User Discover/User List/users.json`
 
 **Process**:
-1. Check if `./User Discover/User List/users.csv` exists
-2. If not exists, create new file with header row
+1. Check if `./User Discover/User List/users.json` exists
+2. If not exists, create new file with empty array `[]`
 3. If exists, read current content
 4. Generate new User ID (e.g., USER_001, USER_002, ...)
    - Find highest existing ID and increment
 5. Create user entry with collected information
-6. Add new row to users.csv and save
+6. Add to users.json and save
 7. Confirm with user that information is correct
 
-**CSV Structure** (16 columns):
+**User Entry Structure**:
 
-```csv
-user_id,name,business_function,company,company_type,network_type,referral,interview_date,status,years_of_experience,prior_hints,current_tools,jtbd_document,go_decision,go_decision_date,workflow
-USER_001,김철수,Marketing,ABC 스타트업,스타트업,closed,직접 아는 사이,2024-02-04,scheduled,3년차,캠페인 리포트 작업이 힘들다고 함,Notion; Google Analytics; Excel,,,,
+```json
+{
+  "user_id": "USER_001",
+  "name": "김철수",
+  "business_function": "Marketing",
+  "company": "ABC 스타트업",
+  "company_type": "스타트업",
+  "network_type": "closed",
+  "referral": "직접 아는 사이",
+  "interview_date": "2024-02-04",
+  "status": "scheduled",
+  "years_of_experience": "3년차",
+  "prior_hints": "캠페인 리포트 작업이 힘들다고 함",
+  "current_tools": ["Notion", "Google Analytics", "Excel"]
+}
 ```
 
-**Notes**:
-- Multiple tools in `current_tools` are separated by semicolons (`;`)
-- Empty fields are left blank
-- CSV format enables easy Notion import/export
-- Direct spreadsheet editing is supported
-
-**Status Values & Tracking Flow**:
-
-The status field tracks the user's progress through the entire workflow collection pipeline:
-
-1. **`pending`** (메시지 준비 완료)
-   - Message prepared but not yet sent
-   - User registered in advance when targeting specific person
-   - **When to use**: After creating recruitment message for specific target
-
-2. **`message_sent`** (응답 대기 중)
-   - Message sent, waiting for response
-   - **When to update**: After sending recruitment message
-
-3. **`no_response`** (무응답/거절)
-   - No response after message, or interviewee declined
-   - **When to update**: After reasonable wait time (1-2 weeks) with no response, or when explicitly declined
-   - **Next step**: Move to next target or retry with different message
-
-4. **`scheduled`** (인터뷰 확정)
-   - Interview date confirmed
-   - **When to update**: When interviewee confirms availability
-   - **Required**: Must also update `interview_date` field
-
-5. **`interviewed`** (인터뷰 완료)
-   - Interview completed, JTBD organization in progress
-   - **When to update**: After conducting interview
-   - **Next step**: Phase 2 - JTBD Organization
-
-6. **`go`** (MVP 개발 진행)
-   - Go/No-Go decision made: GO
-   - **When to update**: After evaluating AI redesign potential
-   - **Required**: Must also update `go_decision_date`
-   - **Next step**: Phase 3 - MVP Proposal & Development
-
-7. **`no_go`** (피봇)
-   - Go/No-Go decision made: NO-GO
-   - **When to update**: When AI redesign potential is low or infeasible
-   - **Next step**: Pivot to next user
-
-8. **`demo_complete`** (데모 완료)
-   - MVP demo delivered to user
-   - **When to update**: After demo session
-   - **Next step**: Wait 1 week for follow-up
-
-9. **`big_fan`** (Big Fan 확인)
-   - User actively using MVP and sharing with colleagues
-   - **When to update**: After 1-week follow-up confirms enthusiastic usage
-   - **Signals**: Daily usage, voluntary sharing, "can't go back" dependency
-
-10. **`pivot`** (피봇)
-   - Lukewarm or negative response after demo/follow-up
-   - **When to update**: When follow-up shows low engagement
-   - **Next step**: Move to next user quickly
-
-**Quick Reference Flow**:
-```
-                     ┌─→ no_response (end)
-                     │
-pending → message_sent ──→ scheduled → interviewed → go/no_go
-                                            ↓              ↓
-                                       demo_complete    (end)
-                                            ↓
-                                      big_fan/pivot
-```
-
-**Pro Tip**: When creating messages for specific users (1:1 targeting), register them immediately with `pending` status. High-probability targets deserve upfront tracking.
+**Status Values**:
+- `scheduled`: Interview scheduled but not yet conducted
+- `interviewed`: Interview completed, JTBD in progress
+- `mvp_delivered`: MVP demo completed
+- `big_fan`: Identified as Big Fan
+- `pivot`: Decided to pivot away from this workflow
 
 ### User Confirmation
 

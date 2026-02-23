@@ -370,7 +370,7 @@ Save JTBD document to:
 
 #### User List Update
 
-Update `./User Discover/User List/users.csv`:
+Update `./User Discover/User List/users.json`:
 
 **Before**:
 ```json
